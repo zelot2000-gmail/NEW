@@ -57,41 +57,65 @@
 				$i = 0;
 				foreach($xml->children()->children() as $rss) { 
 					if($rss->pubDate) {
-						$i++;
-						$title = $rss->title;
-						$link = $rss->link;
-						$description = $rss->description;
-						$date = $rss->pubDate;
-						list($y,$m,$d) = explode("-",$date);
-						
-						$SQL =  "select * from tb_rss where deptid='".$deptid."' and type='".$type."' and title='".$title."' and sdate='".$date."'  ";
-						$result = mysqli_query($mysqli, $SQL) or die(mysqli_error($mysqli).$SQL);
-						if(mysqli_num_rows($result)<=0) {
-							
-							$SQL = "insert into tb_rss (
-											deptid,
-											type,
-											title, 
-											link, 
-											description, 
-											sdate, 
-											confirm, 
-											lastupdate
-										) values(
-											'".$deptid."',
-											'".$type."',
-											'".$title."',
-											'".$link."',
-											'".$description."',
-											'".$date."',
-											1, 
-											'".date("Y-m-d H:i:s")."'
-										)";
-							mysqli_query($mysqli, $SQL) or die(mysqli_error($mysqli).$SQL);
-							$no++;
-						}
+    $i++;
+    $title = $rss->title;
+    $link = $rss->link;
+    $description = $rss->description;
+    $date = $rss->pubDate;
+    list($y,$m,$d) = explode("-",$date);
+    
+    $SQL =  "select * from tb_rss where deptid='".$deptid."' and type='".$type."' and title='".$title."' and sdate='".$date."'  ";
+    // ... (ส่วนที่เหลือของโค้ด SELECT และ INSERT)
+``` | ```php
+if($rss->pubDate) {
+    $i++;
+    // เก็บข้อมูลดิบจาก RSS
+    $title_raw = (string)$rss->title;
+    $link_raw = (string)$rss->link;
+    $description_raw = (string)$rss->description;
+    $date = $rss->pubDate;
+    list($y,$m,$d) = explode("-",$date);
+    
+    // ** จุดแก้ไขปัญหาภาษาต่างดาว (TIS-620 -> UTF-8) **
+    // 1. แปลง Character Set
+    $title_utf8 = @iconv("TIS-620", "UTF-8//IGNORE", $title_raw);
+    $description_utf8 = @iconv("TIS-620", "UTF-8//IGNORE", $description_raw);
 
-					} // if($rss->pubDate) {
+    // 2. Escape String เพื่อความปลอดภัยในฐานข้อมูล
+    $title_safe = mysqli_real_escape_string($mysqli, $title_utf8);
+    $link_safe = mysqli_real_escape_string($mysqli, $link_raw);
+    $description_safe = mysqli_real_escape_string($mysqli, $description_utf8);
+    // ** สิ้นสุดการแก้ไข **
+
+    // ใช้ $title_safe ในการค้นหา (SELECT)
+    $SQL =  "select * from tb_rss where deptid='".$deptid."' and type='".$type."' and title='".$title_safe."' and sdate='".$date."'  ";
+    $result = mysqli_query($mysqli, $SQL) or die(mysqli_error($mysqli).$SQL);
+    if(mysqli_num_rows($result)<=0) {
+        
+        $SQL = "insert into tb_rss (
+                        deptid,
+                        type,
+                        title, 
+                        link, 
+                        description, 
+                        sdate, 
+                        confirm, 
+                        lastupdate
+                    ) values(
+                        '".$deptid."',
+                        '".$type."',
+                        '".$title_safe."',         // ใช้ตัวแปรที่แปลงและปลอดภัยแล้ว
+                        '".$link_safe."',          // ใช้ตัวแปรที่ปลอดภัยแล้ว
+                        '".$description_safe."',   // ใช้ตัวแปรที่แปลงและปลอดภัยแล้ว
+                        '".$date."',
+                        1, 
+                        '".date("Y-m-d H:i:s")."'
+                    )";
+        mysqli_query($mysqli, $SQL) or die(mysqli_error($mysqli).$SQL);
+        $no++;
+    }
+
+} // if($rss->pubDate) {
 				} // foreach($xml->children()->children() as $rss) { 
 			} // if($xml!==false) {
 		} // foreach($_AT as $key => $type) {
@@ -232,4 +256,5 @@
 
   </head>
   <body>
+
 
