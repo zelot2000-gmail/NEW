@@ -59,7 +59,10 @@
 		echo "Debugging error: " . mysqli_connect_error() . PHP_EOL."<br>";
 		exit;
 	}
-	mysqli_query($mysqli, "set names 'utf8' ");
+	// แก้ไขบรรทัดนี้: เปลี่ยนไปใช้ฟังก์ชันมาตรฐาน
+	// mysqli_query($mysqli, "set names 'utf8' "); // <-- ลบหรือคอมเมนต์บรรทัดนี้
+    mysqli_set_charset($mysqli, "utf8"); // <-- เพิ่มบรรทัดนี้เข้าไปแทน
+
 
 
 	function alert($msg,$link) {
@@ -156,4 +159,5 @@
 		 return $interval->format($differenceFormat);
 		 
 	 } 
+
 ?>
